@@ -127,7 +127,7 @@ public OnPlayerConnect(playerid)
     // -
 
     AC_Player[playerid][pCheckSum] = -1;
-    SetTimerEx("autoSobCheck", 2900, false, "i", playerid); //2900
+    SetTimerEx("autoSobCheck", 2900, false, "i", playerid); 
     return 1;
 }
 /*
@@ -244,13 +244,13 @@ public autoSobCheck(playerid)
         }
 
         SendClientMessage(playerid, C_RED, "[ERROR] Your client version is: %s. Allowed client versions: {FFFFFF}%s", version, versionList);
-        SetTimerEx("kickPlayer", 1500, false, "ii", playerid, 0);
+        return SetTimerEx("kickPlayer", 900, false, "ii", playerid, 0);
     }
     
     // --
     if ( AC_Player[playerid][mobilePlayer] == true )
     {
-        SendClientMessage(playerid, C_GREEN, "[SYSTEM] You’re currently playing the mobile version of SA-MP.");
+        SendClientMessage(playerid, C_GREEN, "[SYSTEM] Youâ€™re currently playing the mobile version of SA-MP.");
     }
 
     if ( AC_Player[playerid][pSuspicious] == true )
