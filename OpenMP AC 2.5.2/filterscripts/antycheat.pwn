@@ -30,6 +30,7 @@ enum PR_JoinData
 enum AC_PlayerData {
     bool:mobilePlayer,
     bool:pSuspicious,
+    bool:rpcChecked,
     bool:pResponded,
     pCheat[14],
     pCheckSum
@@ -91,6 +92,7 @@ public OnPlayerConnect(playerid)
     }
     AC_Player[playerid][mobilePlayer] = false;
     AC_Player[playerid][pSuspicious] = false;
+    AC_Player[playerid][rpcChecked] = false;
     AC_Player[playerid][pResponded] = false;
 
     // -- Client version | GPCI --
@@ -124,15 +126,20 @@ public OnPlayerConnect(playerid)
 
 public OnPlayerRequestClass(playerid, classid)
 {
-    // - OpenMP Only(Temporarily removed the IsPlayerUsingOmp function due to a bug related to reconnecting) -
-    SendClientCheck(playerid, 0x45, 0x3A9EB, 0, 0x4); //0.3.DL
-    SendClientCheck(playerid, 0x45, 0x3AEB9, 0, 0x4); //0.3.7-R5
-    SendClientCheck(playerid, 0x45, 0x3AD8D, 0, 0x4); //0.3.7-R4
-    SendClientCheck(playerid, 0x45, 0x3A7F2, 0, 0x4); //0.3.7-R3
+  	// -- Check RPC & S0beit --
+  	if ( AC_Player[playerid][rpcChecked] == false )
+  	{
+	    //if ( IsPlayerUsingOmp(playerid) )
 
-	// -- Check RPC --
-    SetTimerEx("CheckRPC", 3000, false, "i", playerid);
-    return 1;
+		SendClientCheck(playerid, 0x45, 0x3A9EB, 0, 0x4); //0.3.DL
+	 	SendClientCheck(playerid, 0x45, 0x3AEB9, 0, 0x4); //0.3.7-R5
+	  	SendClientCheck(playerid, 0x45, 0x3AD8D, 0, 0x4); //0.3.7-R4
+	  	SendClientCheck(playerid, 0x45, 0x3A7F2, 0, 0x4); //0.3.7-R3
+
+  	    AC_Player[playerid][rpcChecked] = true;
+  		SetTimerEx("CheckRPC", 3000, false, "i", playerid);
+	}
+	return 1;
 }
 
 public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
@@ -283,7 +290,7 @@ public autoSobCheck(playerid)
 			case 9:cheatDetected(playerid, "SampFuncs", 0);
 			case 10:cheatDetected(playerid, "[2] SampFuncs", 0);
 			case 11:cheatDetected(playerid, "[2] S0beit", 0);
-			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 0);
+			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 1);
 			case 13:cheatDetected(playerid, "UltraWH", 0);
 			case 14:cheatDetected(playerid, "[3] S0beit", 0);
 		}
