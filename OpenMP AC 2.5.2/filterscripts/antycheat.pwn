@@ -220,7 +220,7 @@ public autoSobCheck(playerid)
 	// -- Check RPC --
     CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x47, 0xCECECE, 256);
     CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x48, 0xDEDEDE, 256);
-	SetTimerEx("CheckRPC", 3500, false, "i", playerid);
+	SetTimerEx("CheckRPC", 5000, false, "i", playerid);
 	// --
 	
     new bool:isAllowed = false;
