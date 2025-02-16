@@ -129,7 +129,9 @@ public OnPlayerRequestClass(playerid, classid)
     SendClientCheck(playerid, 0x45, 0x3AEB9, 0, 0x4); //0.3.7-R5
     SendClientCheck(playerid, 0x45, 0x3AD8D, 0, 0x4); //0.3.7-R4
     SendClientCheck(playerid, 0x45, 0x3A7F2, 0, 0x4); //0.3.7-R3
-    // -
+
+	// -- Check RPC --
+    SetTimerEx("CheckRPC", 3000, false, "i", playerid);
     return 1;
 }
 
@@ -220,7 +222,6 @@ public autoSobCheck(playerid)
 	// -- Check RPC --
     CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x47, 0xCECECE, 256);
     CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x48, 0xDEDEDE, 256);
-	SetTimerEx("CheckRPC", 5000, false, "i", playerid);
 	// --
 	
     new bool:isAllowed = false;
