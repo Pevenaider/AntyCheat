@@ -290,7 +290,7 @@ public autoSobCheck(playerid)
 			case 9:cheatDetected(playerid, "SampFuncs", 0);
 			case 10:cheatDetected(playerid, "[2] SampFuncs", 0);
 			case 11:cheatDetected(playerid, "[2] S0beit", 0);
-			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 1);
+			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 0);
 			case 13:cheatDetected(playerid, "UltraWH", 0);
 			case 14:cheatDetected(playerid, "[3] S0beit", 0);
 		}
