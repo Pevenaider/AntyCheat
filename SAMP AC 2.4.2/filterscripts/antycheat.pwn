@@ -11,6 +11,8 @@
 
 #define MOBILE_CLIENT "ED40ED0E8089CC44C08EE9580F4C8C44EE8EE990"
 
+#define MAX_MEMADDR (14)
+
 // -
 native SendClientCheck(playerid, type, arg, offsetMem, size);
 native gpci(playerid, serial[], maxlen);
@@ -33,31 +35,39 @@ enum AC_PlayerData {
 	bool:mobilePlayer,
 	bool:pSuspicious,
 	bool:pResponded,
-	pCheat[13],
+	pCheat[MAX_MEMADDR],
 	pCheckSum
 };
 
 new AC_Player[MAX_PLAYERS][AC_PlayerData];
 
 // ------------
-new rMemAddr[13];
-new opcodes[13] = {
-    0x06865E,
-    0xA88774,
-    0xDB6746,
-    0xFDB957,
-    0x52D558,
-    0xE4FC58,
-    0x1BA246,
-    0xB0C56F,
-    0xF9855E,
-    0x910152,
-    0xF51D54,
-    0xF4C853,
-    0xB47E74
+enum cheatData
+{
+    opcode,
+    expectedValue,
+    cheatValue
+}
+
+new memory[MAX_MEMADDR][cheatData] =
+{
+    { 0x06865E, 192, 1 },
+    { 0xA88774, 72, 2 },
+    { 0xDB6746, 192, 3 },
+    { 0xFDB957, 68, 4 },
+    { 0x52D558, 196, 5 },
+    { 0xE4FC58, 64, 6 },
+    { 0x1BA246, 8, 7 },
+    { 0xB0C56F, 200, 8 },
+    { 0xF9855E, 200, 9 },
+    { 0x910152, 204, 10 },
+    { 0xC7FB6E, 196, 11 },
+    { 0xF4C853, 132, 12 },
+    { 0xB47E74, 132, 13 },
+    { 0x242C52, 192, 14 }
 };
-new cheatValues[13] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 };
-new expectedValues[13] = { 192, 72, 192, 68, 196, 64, 8, 200, 200, 204, 128, 132, 132 };
+
+new rMemAddr[MAX_MEMADDR];
 
 // -- Callbacks --
 public OnFilterScriptInit()
@@ -77,7 +87,7 @@ public OnPlayerConnect(playerid)
     new version[24], pAuth[43];
 
     // --
-    for (new i = 0; i < 13; i++){
+    for (new i = 0; i < MAX_MEMADDR; i++){
         AC_Player[playerid][pCheat][i] = -1;
     }
     AC_Player[playerid][mobilePlayer] = false;
@@ -111,15 +121,19 @@ public OnPlayerConnect(playerid)
     SendClientCheck(playerid, 0x48, 0, 0, 0x4);
     // --
     
-    for (new i = 0; i < 13; i++) rMemAddr[i] = rrAddress(opcodes[i]), SendClientCheck(playerid, 0x5, rMemAddr[i], 0x0, 0x4);
+	for (new i = 0; i < MAX_MEMADDR; i++)
+	{
+    	rMemAddr[i] = rrAddress(memory[i][opcode]);
+    	SendClientCheck(playerid, 0x5, rMemAddr[i], 0x0, 0x4);
+	}
 
     // -- Check RPC --
-    CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x47, 0xCECECE, 256);
-    CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x48, 0xDEDEDE, 256);
+    CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x47, 0xCECECE, 255);
+    CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x48, 0xDEDEDE, 255);
     // -
     
     AC_Player[playerid][pCheckSum] = -1;
-    SetTimerEx("autoSobCheck", 2900, false, "i", playerid); 
+    SetTimerEx("checkPlayer", 2900, false, "i", playerid);
     return 1;
 }
 
@@ -132,16 +146,16 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
         {
             if ( AC_Player[playerid][mobilePlayer] == false ) { AC_Player[playerid][pResponded] = true; }
 
-		   	for (new i = 0; i < 13; i++)
+		   	for (new i = 0; i < MAX_MEMADDR; i++)
 		    {
-		        if ( memaddr == rMemAddr[i] )
-		        {
-		            if ( retndata != expectedValues[i] )
-					{
-					    AC_Player[playerid][pCheat][i] = cheatValues[i];
-					    break;
-					}
-		        }
+	            if (memaddr == rMemAddr[i])
+	            {
+	                if (retndata != memory[i][expectedValue])
+	                {
+	                    AC_Player[playerid][pCheat][i] = memory[i][cheatValue];
+	                    break;
+	                }
+	            }
 		    }
 		}
         
@@ -149,7 +163,7 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
         {
             if ( AC_Player[playerid][mobilePlayer] == false )
             {
-                if ( memaddr == 0xCECECE && retndata == 256 )
+                if ( memaddr == 0xCECECE && retndata == 255 )
                 {
                 	AC_Player[playerid][pSuspicious] = true;
                 	// -
@@ -166,7 +180,7 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
         {
             if ( AC_Player[playerid][mobilePlayer] == false )
             {
-                if ( memaddr == 0xDEDEDE && retndata == 256 )
+                if ( memaddr == 0xDEDEDE && retndata == 255 )
                 {
                 	AC_Player[playerid][pSuspicious] = true;
                 	// -
@@ -182,8 +196,8 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
 	return 1;
 }
 
-forward autoSobCheck(playerid);
-public autoSobCheck(playerid)
+forward checkPlayer(playerid);
+public checkPlayer(playerid)
 {
     if ( AC_Player[playerid][mobilePlayer] == true )
     {
@@ -203,7 +217,7 @@ public autoSobCheck(playerid)
     }
     // --
     
-	for (new i = 0; i < 13; i++)
+	for (new i = 0; i < MAX_MEMADDR; i++)
 	{
     	switch ( AC_Player[playerid][pCheat][i] )
     	{
@@ -220,6 +234,7 @@ public autoSobCheck(playerid)
 			case 11:cheatDetected(playerid, "[2] S0beit", 0);
 			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 0);
 			case 13:cheatDetected(playerid, "UltraWH", 0);
+			case 14:cheatDetected(playerid, "Silent Aim", 0);
 		}
 	}
     return 1;
