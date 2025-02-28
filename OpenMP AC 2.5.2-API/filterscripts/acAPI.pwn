@@ -316,19 +316,33 @@ public checkPlayer(playerid)
 	{
     	switch ( AC_Player[playerid][pCheat][i] )
     	{
-    	    case 1,11,15:CallRemoteFunction("OnPlayerSobeitDetected", "ii", playerid, AC_Player[playerid][pCheat][i]); // S0beit
+    	    case 1:CallRemoteFunction("OnPlayerSobeitDetected", "ii", playerid, 1); // S0beit, cheatID: 1
 
-    	    case 2..7:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, AC_Player[playerid][pCheat][i]); // CLEO, MoonLoader
+    	    case 2:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, 2); // CLEO, cheatID: 2
+    	    
+    	    case 3:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, 3); // CLEO, cheatID: 3
+    	    
+    	    case 4:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, 4); // CLEO, cheatID: 4
+    	    
+    	    case 5:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, 5); // CLEO / MoonLoader, cheatID: 5
+    	    
+    	    case 6:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, 6); // CLEO / MoonLoader, cheatID: 6
+    	    
+    	    case 7:CallRemoteFunction("OnPlayerModsDetected", "ii", playerid, 7); // CLEO, cheatID: 7
 
     	    case 8:CallRemoteFunction("OnPlayerSPDetected", "i", playerid); // SilentPatch
     	    
 			case 9,10:CallRemoteFunction("OnPlayerSFDetected", "i", playerid); // SampFuncs
+			
+			case 11:CallRemoteFunction("OnPlayerSobeitDetected", "ii", playerid, 11); // S0beit, cheatID: 11
 			
 			case 12:CallRemoteFunction("OnPlayerMVFDetected", "i", playerid); // Modified vorbisfile
 			
             case 13:CallRemoteFunction("OnPlayerWHDetected", "i", playerid); // Wallhack
             
 			case 14:CallRemoteFunction("OnPlayerAimDetected", "i", playerid); // Silent aim v8
+			
+			case 15:CallRemoteFunction("OnPlayerSobeitDetected", "ii", playerid, 15); // S0beit, cheatID: 15
 		}
 	}
     return 1;
