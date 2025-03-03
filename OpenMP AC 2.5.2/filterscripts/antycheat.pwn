@@ -59,7 +59,7 @@ new clientAddr[MAX_ALLOWED_CLIENTS] = { 0x3A9EB, 0x3AEB9, 0x3AD8D, 0x3A7F2 };
 // ------------
 enum cheatData
 {
-    opcode,
+    memadr,
     expectedValue,
     cheatValue
 }
@@ -139,7 +139,7 @@ public OnPlayerConnect(playerid)
 
 	for (new i = 0; i < MAX_MEMADDR; i++)
 	{
-    	SendClientCheck(playerid, 0x5, rrAddress(memory[i][opcode]), 0x0, 0x4);
+    	SendClientCheck(playerid, 0x5, rrAddress(memory[i][memadr]), 0x0, 0x4);
 	}
 	SendClientCheck(playerid, 0x5, 0x53EA05, 0x0, 0x4);
 	
@@ -180,7 +180,7 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
 
 		   	for (new i = 0; i < MAX_MEMADDR; i++)
 		    {
-	            if ( memaddr == rrAddress(memory[i][opcode]) )
+	            if ( memaddr == rrAddress(memory[i][memadr]) )
 	            {
 	                if (retndata != memory[i][expectedValue])
 	                {
