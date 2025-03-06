@@ -44,7 +44,7 @@ new AC_Player[MAX_PLAYERS][AC_PlayerData];
 // ------------
 enum cheatData
 {
-    opcode,
+    memadr,
     expectedValue,
     cheatValue
 }
@@ -123,7 +123,7 @@ public OnPlayerConnect(playerid)
     
 	for (new i = 0; i < MAX_MEMADDR; i++)
 	{
-    	rMemAddr[i] = rrAddress(memory[i][opcode]);
+    	rMemAddr[i] = rrAddress(memory[i][memadr]);
     	SendClientCheck(playerid, 0x5, rMemAddr[i], 0x0, 0x4);
 	}
 
