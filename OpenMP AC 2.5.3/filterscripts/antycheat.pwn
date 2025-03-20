@@ -41,6 +41,7 @@ enum AC_PlayerData {
     bool:pResponded,
     pCheat[MAX_CHEATS],
     checkSampAddr,
+    checkTimes,
     pCheckSum
 };
 
@@ -130,6 +131,7 @@ public OnPlayerConnect(playerid)
     AC_Player[playerid][oprcChecked] = false;
     AC_Player[playerid][pResponded] = false;
     AC_Player[playerid][checkSampAddr] = 0x0;
+    AC_Player[playerid][checkTimes] = 0;
     
     // -- loops --
 	for (new i = 0; i < MAX_ALLOWED_CLIENTS; i++) {
@@ -169,9 +171,10 @@ public OnPlayerConnect(playerid)
 
 	    SendClientCheck(playerid, 0x5, rMemAddr[i], rOffset, 0x4);
 	}
-    checkClientCheat(playerid);
-
 	SendClientCheck(playerid, 0x5, 0x53EA05, 0x0, 0x4);
+    
+    // --
+    checkClientCheat(playerid);
     
 	// -- Check RPC --
     CallLocalFunction("OnClientCheckResponse", "iiii", playerid, 0x47, 0xCECECE, 255);
@@ -194,7 +197,7 @@ public OnPlayerRequestClass(playerid, classid)
 	  	SendClientCheck(playerid, 0x45, 0x3AD8D, 0, 0x4); //0.3.7-R4
 	  	SendClientCheck(playerid, 0x45, 0x3A7F2, 0, 0x4); //0.3.7-R3
 
-		//
+  //
   	    AC_Player[playerid][oprcChecked] = true;
 	}
 	return 1;
@@ -279,39 +282,49 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
 forward OnClientCheckResponseHandler(playerid, BitStream:bs);
 public OnClientCheckResponseHandler(playerid, BitStream:bs)
 {
-    new actionid = 0x45, memaddr = AC_Player[playerid][checkSampAddr], retndata;
+	// --
+	if ( AC_Player[playerid][checkTimes] >= 5 ) return 1;
+	// --
+	
+	new actionid = 0x45, memaddr = AC_Player[playerid][checkSampAddr], retndata;
 
-    BS_ReadValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, retndata);
+	// --
+	BS_ReadValue(bs, PR_UINT8, actionid, PR_INT32, memaddr, PR_UINT8, retndata);
+	// --
 
 	if ( actionid == 0x45 && memaddr == AC_Player[playerid][checkSampAddr] )
 	{
-	    BS_ResetReadPointer(BitStream:bs);
-
-	    //BS_SetWriteOffset(BitStream:bs, random(255));
-
-		BS_WriteValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, random(255));
-
-		PR_SendRPC(bs, playerid, 103, PR_LOW_PRIORITY, PR_RELIABLE_ORDERED);
+	    PR_SendRPC(bs, playerid, 103, PR_SYSTEM_PRIORITY, PR_UNRELIABLE);
+	    //
+ 		BS_ResetReadPointer(BitStream:bs);
+		BS_WriteValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, retndata);
+		PR_SendRPC(bs, playerid, 103, PR_SYSTEM_PRIORITY, PR_RELIABLE);
+		//
 		BS_ReadValue(bs, PR_UINT8, actionid, PR_INT32, memaddr, PR_UINT8, retndata);
 
 		// -- Check retndata --
-	    if ( retndata != 192 )
+	    if ( retndata != 192 ) { AC_Player[playerid][checkTimes] = 18; }
+	    
+		if ( AC_Player[playerid][checkTimes] == 18 )
 		{
 			cheatDetected(playerid, "[3] S0beit SobFox Launcher", 2);
 			return 0;
 		}
+		AC_Player[playerid][checkTimes] ++;
 	}
-	return 1;
+    return 1;
 }
 
 forward checkPlayer(playerid);
 public checkPlayer(playerid)
 {
+    if ( !IsPlayerConnected(playerid) ) return 1;
+    
 	new version[24], pName[MAX_PLAYER_NAME+1];
 
  	GetPlayerVersion(playerid, version, sizeof(version));
 	GetPlayerName(playerid, pName, sizeof(pName));
-
+	
 	// -- Check client version --
     new bool:isAllowed = false;
     for (new i = 0; i < MAX_ALLOWED_CLIENTS; i++)
@@ -387,7 +400,7 @@ public checkPlayer(playerid)
 			case 9:cheatDetected(playerid, "SampFuncs", 0);
 			case 10:cheatDetected(playerid, "[2] SampFuncs", 0);
 			case 11:cheatDetected(playerid, "[2] S0beit", 0);
-			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 0);
+			case 12:cheatDetected(playerid, "Modified VorbisFile.dll", 1);
 			case 13:cheatDetected(playerid, "UltraWH", 0);
 			case 14:cheatDetected(playerid, "Silent Aim", 0);
 			case 15:cheatDetected(playerid, "Improved Deagle", 0);
@@ -490,9 +503,6 @@ static checkClientCheat(playerid)
     new version[24], rSampAddr;
     GetPlayerVersion(playerid, version, sizeof(version));
 
-    new randIndex = random(sizeof(memOffsets));
-    new rSampOffset = memOffsets[randIndex];
-
     if ( strcmp ( version, "0.3.DL-R1", true ) == 0 ) rSampAddr = sampAddr[0];
 
     if ( strcmp ( version, "0.3.7-R5", true ) == 0 ) rSampAddr = sampAddr[1];
@@ -501,9 +511,11 @@ static checkClientCheat(playerid)
 
    	if ( strcmp ( version, "0.3.7-R3", true ) == 0 ) rSampAddr = sampAddr[3];
 
-    SendClientCheck(playerid, 0x45, rSampAddr - rSampOffset, rSampOffset, 0x4);
-
-    AC_Player[playerid][checkSampAddr] = rSampAddr - rSampOffset;
+    for (new i = 0; i < 3; i++)
+    {
+    	SendClientCheck(playerid, 0x45, rSampAddr, 0x0, 0x4);
+    }
+    AC_Player[playerid][checkSampAddr] = rSampAddr;
     return 1;
 }
 
