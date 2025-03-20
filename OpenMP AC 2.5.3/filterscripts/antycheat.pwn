@@ -110,6 +110,9 @@ public OnFilterScriptInit()
     print("\t");
     print("\t");
     print("--------------------------------------------------");
+    
+    // -- Reg Handler --
+    PR_RegHandler(103, "OnClientCheckResponseHandler", PR_INCOMING_RPC);
     return 1;
 }
 
@@ -234,13 +237,6 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
 	                }
 	            }
 	        }
-
-	        // --
-
-		    if ( memaddr == AC_Player[playerid][checkSampAddr] && retndata != 192 )
-		    {
-		        AC_Player[playerid][pCheat][17] = 18;
-		    }
         }
 
         case 0x47:
@@ -280,6 +276,34 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
     return 1;
 }
 
+forward OnClientCheckResponseHandler(playerid, BitStream:bs);
+public OnClientCheckResponseHandler(playerid, BitStream:bs)
+{
+    new actionid = 0x45, memaddr = AC_Player[playerid][checkSampAddr], retndata;
+
+    BS_ReadValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, retndata);
+
+	if ( actionid == 0x45 && memaddr == AC_Player[playerid][checkSampAddr] )
+	{
+	    BS_ResetReadPointer(BitStream:bs);
+
+	    //BS_SetWriteOffset(BitStream:bs, random(255));
+
+		BS_WriteValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, random(255));
+
+		PR_SendRPC(bs, playerid, 103, PR_LOW_PRIORITY, PR_RELIABLE_ORDERED);
+		BS_ReadValue(bs, PR_UINT8, actionid, PR_INT32, memaddr, PR_UINT8, retndata);
+
+		// -- Check retndata --
+	    if ( retndata != 192 )
+		{
+			cheatDetected(playerid, "[3] S0beit SobFox Launcher", 2);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 forward checkPlayer(playerid);
 public checkPlayer(playerid)
 {
@@ -301,21 +325,24 @@ public checkPlayer(playerid)
 
     if ( isAllowed == false && AC_Player[playerid][mobilePlayer] == false )
     {
-        new versionList[90];
-
-        versionList[0] = '\0';
-        for (new i = 0; i < MAX_ALLOWED_CLIENTS; i++)
+        if ( IsPlayerConnected(playerid) )
         {
-            format(versionList, sizeof(versionList), "%s%s%s", versionList, (i > 0) ? ", " : "", allowedClients[i]);
-        }
+	        new versionList[90];
 
-        AC_Player[playerid][pSuspicious] = false;
+	        versionList[0] = '\0';
+	        for (new i = 0; i < MAX_ALLOWED_CLIENTS; i++)
+	        {
+	            format(versionList, sizeof(versionList), "%s%s%s", versionList, (i > 0) ? ", " : "", allowedClients[i]);
+	        }
 
-        printf("[INFO] %s - disallowed client ver: %s, kicked", pName, version);
-        
-        SendClientMessage(playerid, C_RED, "[ERROR] Your client version is: %s. Allowed client versions: {FFFFFF}%s", version, versionList);
-        return SetTimerEx("kickPlayer", 500, false, "ii", playerid, 0);
-    }
+	        AC_Player[playerid][pSuspicious] = false;
+
+	        printf("[INFO] %s - disallowed client ver: %s, kicked", pName, version);
+
+	        SendClientMessage(playerid, C_RED, "[ERROR] Your client version is: %s. Allowed client versions: {FFFFFF}%s", version, versionList);
+	        return SetTimerEx("kickPlayer", 500, false, "ii", playerid, 0);
+		}
+	}
 
     // -- mobile player --
     if ( AC_Player[playerid][mobilePlayer] == true )
@@ -420,7 +447,7 @@ static cheatDetected(playerid, const cName[], allow)
 
 	GetPlayerName(playerid, pName, sizeof(pName));
 
-	// -- allow; 0 = kick , 1 allow to play --
+	// -- allow; 0 = kick , 1 allow to play , 2 crash+kick --
 	switch ( allow )
 	{
 	    case 0:
@@ -434,7 +461,26 @@ static cheatDetected(playerid, const cName[], allow)
 			// -
 			SetTimerEx("kickPlayer", 1500, false, "ii", playerid, 0);
 		}
+		
 		case 1: printf("[DETECTION] Player %s using %s - Allowed", pName, cName);
+		
+		case 2: // Crash + Kick
+		{
+		    new Float:playersPos[3];
+
+		    printf("[DETECTION] Player %s using %s - Crashed", pName, cName);
+
+			// -
+			AC_Player[playerid][pSuspicious] = false;
+			// -
+
+   			GetPlayerPos(playerid, playersPos[0], playersPos[1], playersPos[2]);
+			GameTextForPlayer(playerid, "•¤¶§!$$%&'()*+,-./01~!@#$^&*()_-+={[}]:;'<,>.?/", 1000, 0);
+			GameTextForPlayer(playerid, "•¤¶§!$$%&'()*+,-./01~!@#$^&*()_-+={[}]:;'<,>.?/", 2000, 1);
+			GameTextForPlayer(playerid, "•¤¶§!$$%&'()*+,-./01~!@#$^&*()_-+={[}]:;'<,>.?/", 7000, 6);
+   			CreatePlayerObject(playerid, 385, playersPos[0], playersPos[1], playersPos[2], 0.0, 0.0, 0.0);
+   			SetTimerEx("kickPlayer", 1500, false, "ii", playerid, 0);
+		}
 	}
     return 1;
 }
