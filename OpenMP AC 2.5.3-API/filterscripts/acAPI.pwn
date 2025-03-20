@@ -42,6 +42,7 @@ enum AC_PlayerData {
     bool:pResponded,
     pCheat[MAX_CHEATS],
     checkSampAddr,
+    checkTimes,
     pCheckSum
 };
 
@@ -111,6 +112,9 @@ public OnFilterScriptInit()
     print("\t");
     print("\t");
     print("--------------------------------------------------");
+    
+    // -- Reg Handler --
+    PR_RegHandler(103, "OnClientCheckResponseHandler", PR_INCOMING_RPC);
     return 1;
 }
 
@@ -127,6 +131,7 @@ public OnPlayerConnect(playerid)
     AC_Player[playerid][pSuspicious] = false;
     AC_Player[playerid][oprcChecked] = false;
     AC_Player[playerid][pResponded] = false;
+    AC_Player[playerid][checkTimes] = 0;
     AC_Player[playerid][checkSampAddr] = 0x0;
     
     // -- loops --
@@ -235,13 +240,6 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
 	                }
 	            }
 	        }
-
-	        // --
-
-		    if ( memaddr == AC_Player[playerid][checkSampAddr] && retndata != 192 )
-		    {
-		        AC_Player[playerid][pCheat][17] = 18;
-		    }
         }
 
         case 0x47:
@@ -281,6 +279,37 @@ public OnClientCheckResponse(playerid, actionid, memaddr, retndata)
     return 1;
 }
 
+forward OnClientCheckResponseHandler(playerid, BitStream:bs);
+public OnClientCheckResponseHandler(playerid, BitStream:bs)
+{
+    new actionid = 0x45, memaddr = AC_Player[playerid][checkSampAddr], retndata;
+
+    BS_ReadValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, retndata);
+
+	if ( actionid == 0x45 && memaddr == AC_Player[playerid][checkSampAddr] )
+	{
+	    BS_ResetReadPointer(BitStream:bs);
+
+	    //BS_SetWriteOffset(BitStream:bs, random(255));
+
+		BS_WriteValue(bs, PR_UINT8, actionid, PR_UINT32, memaddr, PR_UINT8, random(255));
+
+		PR_SendRPC(bs, playerid, 103, PR_LOW_PRIORITY, PR_RELIABLE_ORDERED);
+		BS_ReadValue(bs, PR_UINT8, actionid, PR_INT32, memaddr, PR_UINT8, retndata);
+
+		// --
+		AC_Player[playerid][checkTimes] ++;
+		
+		// -- Check retndata --
+	    if ( AC_Player[playerid][checkTimes] <= 4 && retndata != 192 )
+		{
+			CallRemoteFunction("OnPlayerSobeitDetected", "ii", playerid, 18); // S0beit, cheatID: 18
+			return 0;
+		}
+	}
+	return 1;
+}
+
 forward checkPlayer(playerid);
 public checkPlayer(playerid)
 {
@@ -302,21 +331,24 @@ public checkPlayer(playerid)
 
     if ( isAllowed == false && AC_Player[playerid][mobilePlayer] == false )
     {
-        new versionList[90];
-
-        versionList[0] = '\0';
-        for (new i = 0; i < MAX_ALLOWED_CLIENTS; i++)
+        if ( IsPlayerConnected(playerid) )
         {
-            format(versionList, sizeof(versionList), "%s%s%s", versionList, (i > 0) ? ", " : "", allowedClients[i]);
-        }
+	        new versionList[90];
 
-        AC_Player[playerid][pSuspicious] = false;
+	        versionList[0] = '\0';
+	        for (new i = 0; i < MAX_ALLOWED_CLIENTS; i++)
+	        {
+	            format(versionList, sizeof(versionList), "%s%s%s", versionList, (i > 0) ? ", " : "", allowedClients[i]);
+	        }
 
-        printf("[INFO] %s - disallowed client ver: %s, kicked", pName, version);
-        
-        SendClientMessage(playerid, C_RED, "[ERROR] Your client version is: %s. Allowed client versions: {FFFFFF}%s", version, versionList);
-        return SetTimerEx("kickPlayer", 500, false, "ii", playerid, 0);
-    }
+	        AC_Player[playerid][pSuspicious] = false;
+
+	        printf("[INFO] %s - disallowed client ver: %s, kicked", pName, version);
+
+	        SendClientMessage(playerid, C_RED, "[ERROR] Your client version is: %s. Allowed client versions: {FFFFFF}%s", version, versionList);
+	        return SetTimerEx("kickPlayer", 500, false, "ii", playerid, 0);
+		}
+	}
 
     // -- mobile player --
     if ( AC_Player[playerid][mobilePlayer] == true )
